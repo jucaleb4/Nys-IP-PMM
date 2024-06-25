@@ -26,5 +26,8 @@ risk_model, original_model = generate_models(m, n, k, d; T = T, saved = true)
 problem_type = risk_model
 problem_name = "risk_model"
 tol=1e-8
-methods = [method_Nystrom(20, false), method_NoPreconditioner(), method_PartialCholesky(20)]
-@enter vars = test_IPPMM(problem_type, problem_name, methods, tol, maxit = 40);
+# methods = [method_Nystrom(20, false), method_NoPreconditioner(), method_PartialCholesky(20)]
+# don't want to overwrite our work
+methods = [method_Nystrom(20, false)]
+vars = test_IPPMM(problem_type, problem_name, methods, tol, maxit = 40, 
+                  prob_name=@sprintf("portfolio_m=%i_n=%i_k=%i", m, n, k));

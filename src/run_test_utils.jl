@@ -13,7 +13,8 @@ Run test function for IPPMM.
 function test_IPPMM(problem_type::AbstractIPMProblem, 
                     problem_name::String, 
                     method_P_list::Vector, tol=1e-4; 
-                    krylov_tol = 1e-6, maxit::Int = 25, timed::Bool = true, saved::Bool = true)
+                    krylov_tol = 1e-6, maxit::Int = 25, timed::Bool = true, saved::Bool = true,
+                    prob_name = nothing)
     println("-"^110)
     
     # Do not time if saved is false
@@ -68,7 +69,8 @@ function test_IPPMM(problem_type::AbstractIPMProblem,
         time_IPPMM = @elapsed begin
             history, opt, vars = IP_PMM_bdd(input; initial_point=initial_point, params=params,
                                             method_P=method_P, 
-                                            tol=tol, maxit = maxit, pc=true, printlevel = 2);
+                                            tol=tol, maxit = maxit, pc=true, printlevel = 2,
+                                            prob_name=prob_name);
         end
         println("First run takes ", time_IPPMM, " seconds.\n")
 
