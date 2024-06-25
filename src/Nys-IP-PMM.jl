@@ -257,6 +257,8 @@ function IP_PMM_bdd(input::IPMInput{T};
             # Solve the Newton system with the predictor right hand side -> Optimistic view, solve as if you wanted to 
             #                                                               solve the original problem in 1 iteration.
             # ------------------------------------------------------------------------------------------------------------ #
+            # CALEB: This is new...
+            @show opN_Reg.D
             CG_solving_elapsed += @elapsed begin 
                 instability, inneriter_pred = normal_eq_solve!(steps, cg_solver, opN_Reg, Pinv, vars, res, indices, krylov_tol)
             end
