@@ -411,6 +411,7 @@ $RECYCLE.BIN/
 
 # Manifest
 Manifest.toml
+Project.toml
 
 ## Data sets folder
 data/*
