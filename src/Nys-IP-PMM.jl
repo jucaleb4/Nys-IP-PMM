@@ -183,6 +183,7 @@ function IP_PMM_bdd(input::IPMInput{T};
 	# TODO: Add option to save or not,... or check if it has been saved before
     # CALEB: Save data
     save_data = prob_name !== nothing
+    deltas = []
     if(save_data)
         root_path = joinpath("/pscratch/sd/c/cju33/data", prob_name)
         !isdir(root_path) && mkpath(root_path)
@@ -276,6 +277,7 @@ function IP_PMM_bdd(input::IPMInput{T};
             #                                                               solve the original problem in 1 iteration.
             # ------------------------------------------------------------------------------------------------------------ #
             # CALEB: Save diagonal (updated above in `update_opN_Reg!`)
+            push!(deltas, opN_Reg.δ)
             if save_data
                 fname_t = joinpath(root_path, @sprintf("D_%i.csv", ct))
                 CSV.write(fname_t, Tables.table(opN_Reg.opN.D.diag), writeheader=false)
@@ -469,6 +471,11 @@ function IP_PMM_bdd(input::IPMInput{T};
         CG_solving_elapsed = zero(T)
 
     end # end of while loop
+
+    if save_data
+        fname_t = joinpath(root_path, "deltas.csv")
+        CSV.write(fname_t, Tables.table(deltas), writeheader=false)
+    end
 
     # The IPM has terminated because the solution accuracy is reached or the maximum number 
     # of iterations is exceeded, or the problem under consideration is infeasible. Print result.  
