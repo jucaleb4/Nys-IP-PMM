@@ -8,7 +8,8 @@ include(srcdir("Nys-IP-PMM.jl"))
 include(scriptsdir("Portfolio/run_portfolio_utils.jl"))
 
 # Set the seed
-Random.seed!(1104)
+seed = 0
+Random.seed!(seed)
 
 # Set the parameters
 T = Float64
@@ -30,4 +31,4 @@ methods = [method_Nystrom(20, false), method_NoPreconditioner(), method_PartialC
 # don't want to overwrite our work
 methods = [method_Nystrom(20, false), ]
 vars = test_IPPMM(problem_type, problem_name, methods, tol, maxit = 200, 
-                  prob_name=@sprintf("portfolio_m=%i_n=%i_k=%i", m, n, k));
+                  prob_name=@sprintf("portfolio_m=%i_n=%i_k=%i_seed=%i", m, n, k, seed));

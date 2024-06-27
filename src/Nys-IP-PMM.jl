@@ -184,6 +184,8 @@ function IP_PMM_bdd(input::IPMInput{T};
     # CALEB: Save data
     save_data = prob_name !== nothing
     deltas = []
+    pred_pcg_iters = []
+    corr_pcg_iters = []
     if(save_data)
         root_path = joinpath("/pscratch/sd/c/cju33/data", prob_name)
         !isdir(root_path) && mkpath(root_path)
@@ -451,9 +453,15 @@ function IP_PMM_bdd(input::IPMInput{T};
         if pc == true
             push!(history["inner_iter_predictor"], inneriter[1])
             push!(history["inner_iter_corrector"], inneriter[2])
+
+            push!(pred_pcg_iters, inneriter[1])
+            push!(corr_pcg_iters, inneriter[2])
         else
             push!(history["inner_iter_predictor"], inneriter)
             push!(history["inner_iter_corrector"], 0)
+
+            push!(pred_pcg_iters, inneriter)
+            push!(corr_pcg_iters, 0)
         end
         push!(history["krylov_tol"], krylov_tol)
 
@@ -475,6 +483,11 @@ function IP_PMM_bdd(input::IPMInput{T};
     if save_data
         fname_t = joinpath(root_path, "deltas.csv")
         CSV.write(fname_t, Tables.table(deltas), writeheader=false)
+
+        fname_t = joinpath(root_path, "pred_pcg_iters.csv")
+        CSV.write(fname_t, Tables.table(pred_pcg_iters), writeheader=false)
+        fname_t = joinpath(root_path, "corr_pcg_iters.csv")
+        CSV.write(fname_t, Tables.table(corr_pcg_iters), writeheader=false)
     end
 
     # The IPM has terminated because the solution accuracy is reached or the maximum number 
