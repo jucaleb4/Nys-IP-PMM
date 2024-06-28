@@ -70,6 +70,8 @@ function obtain_initial_point!(initial_point::IPMVariables{T}, input::IPMInput{T
 
     opAT = @views opA'
     opAAT = opA * opAT
+    # make sure it is actually symmetric
+    opAAT = 0.5*(opAAT + opAAT')
     N̂ = NystromSketch(opAAT, sketchsize)
     Pinv = NystromPreconditionerInverse(N̂, δ)
 

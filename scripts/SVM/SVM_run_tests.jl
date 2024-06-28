@@ -8,7 +8,8 @@ include(srcdir("Nys-IP-PMM.jl"))
 include(scriptsdir("SVM/SVM_run_tests_utils.jl"))
 
 # Set the seed
-Random.seed!(1234)
+seed = 1234
+Random.seed!(seed)
 
 # Load the datanames and methods
 include(scriptsdir("SVM/SVM_run_tests_data2methods.jl"))
@@ -19,7 +20,8 @@ T = Float64
 problem_type = SVMProblem(T)
 
 # Run the tests
-tol=1e-4
+tol=1e-12
 for problem_name in problem_names_list
-    test_IPPMM(problem_type, problem_name, data2methods[problem_name]["method_Ps"], tol, maxit = 25);
+    test_IPPMM(problem_type, problem_name, data2methods[problem_name]["method_Ps"], tol, maxit = 200,
+                  prob_name=@sprintf("svm_%s_seed=%i", problem_name, seed));
 end
