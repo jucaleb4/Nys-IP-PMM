@@ -8,11 +8,13 @@ include(srcdir("Nys-IP-PMM.jl"))
 include(scriptsdir("Portfolio/run_portfolio_utils.jl"))
 
 # Set the seed
-Random.seed!(1234)
+seed = 0
+Random.seed!(seed)
 
 # Set the parameters
 T = Float64
-m, n, k = 50000, 80000, 100
+# m, n, k = 50000, 80000, 100
+m, n, k = 5000, 8000, 100
 isolated_num = 20
 d_fast = [10^i for i in range(16, 1, length=isolated_num)]
 d_slow = [1 / i for i in 1:(n-isolated_num)]
@@ -26,4 +28,7 @@ problem_type = risk_model
 problem_name = "risk_model"
 tol=1e-8
 methods = [method_Nystrom(20, false), method_NoPreconditioner(), method_PartialCholesky(20)]
-vars = test_IPPMM(problem_type, problem_name, methods, tol, maxit = 40);
+# don't want to overwrite our work
+methods = [method_Nystrom(20, false), ]
+vars = test_IPPMM(problem_type, problem_name, methods, tol, maxit = 200, 
+                  prob_name=@sprintf("portfolio_m=%i_n=%i_k=%i_seed=%i", m, n, k, seed));

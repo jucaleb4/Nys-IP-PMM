@@ -1,3 +1,4 @@
+using Infiltrator
 using DrWatson
 @quickactivate "Nys-IP-PMM"
 if occursin("Intel", Sys.cpu_info()[1].model)
@@ -10,6 +11,10 @@ import Base.promote_eltypeof
 import LinearOperators.storage_type
 import LinearAlgebra: cond
 const LO = LinearOperators
+
+import CSV
+import Tables
+import MatrixMarket
 
 include(srcdir("IP-PMM_structs.jl"))
 include(srcdir("normal_equations.jl"))
@@ -24,7 +29,8 @@ function IP_PMM_bdd(input::IPMInput{T};
                     params::IPPMMParams = IPPMMParams(T),
                     method_P = method_NoPreconditioner{T}(),
                     tol::T = 1e-6, maxit::Int64 = 30,
-                    pc::Bool = false, printlevel::Int64 = 1) where T <: Number
+                    pc::Bool = false, printlevel::Int64 = 1,
+                    prob_name = nothing) where T <: Number
     cumulative_time = 0.0
     cumulative_time += @elapsed begin
     # Create dict for storing results
@@ -121,6 +127,7 @@ function IP_PMM_bdd(input::IPMInput{T};
     # Initialize parameters
     # -------------------------------------------------------------------------------------------------------------------- #
     iter = 0;   opt = :Unsolved;
+    ct = 0;
     α_primal, α_dual = zero(T), zero(T)     # Step-length for primal/dual variables (initialization)
     σmin, σmax = 0.05*one(T), 0.95*one(T)   # Heuristic values.
     σ = zero(T)
@@ -172,6 +179,20 @@ function IP_PMM_bdd(input::IPMInput{T};
 
     # Allocate memory for preconditioner if necessary
     construct_precond_elapsed += @elapsed Pinv = allocate_preconditioner(method_P, opN_Reg)
+
+	# TODO: Add option to save or not,... or check if it has been saved before
+    # CALEB: Save data
+    save_data = prob_name !== nothing
+    deltas = []
+    pred_pcg_iters = []
+    corr_pcg_iters = []
+    if(save_data)
+        root_path = joinpath("/pscratch/sd/c/cju33/data", prob_name)
+        !isdir(root_path) && mkpath(root_path)
+		# use sparse since opA has block structure
+        spA = sparse(Base.Matrix(opN_Reg.opN.opA))
+        MatrixMarket.mmwrite(joinpath(root_path, "Adata.mtx"), spA)
+    end
 
     end
     # ==================================================================================================================== #
@@ -257,6 +278,14 @@ function IP_PMM_bdd(input::IPMInput{T};
             # Solve the Newton system with the predictor right hand side -> Optimistic view, solve as if you wanted to 
             #                                                               solve the original problem in 1 iteration.
             # ------------------------------------------------------------------------------------------------------------ #
+            # CALEB: Save diagonal (updated above in `update_opN_Reg!`)
+            push!(deltas, opN_Reg.δ)
+            if save_data
+                fname_t = joinpath(root_path, @sprintf("D_%i.csv", ct))
+                CSV.write(fname_t, Tables.table(opN_Reg.opN.D.diag), writeheader=false)
+            end
+            ct += 1
+
             CG_solving_elapsed += @elapsed begin 
                 instability, inneriter_pred = normal_eq_solve!(steps, cg_solver, opN_Reg, Pinv, vars, res, indices, krylov_tol)
             end
@@ -424,9 +453,15 @@ function IP_PMM_bdd(input::IPMInput{T};
         if pc == true
             push!(history["inner_iter_predictor"], inneriter[1])
             push!(history["inner_iter_corrector"], inneriter[2])
+
+            push!(pred_pcg_iters, inneriter[1])
+            push!(corr_pcg_iters, inneriter[2])
         else
             push!(history["inner_iter_predictor"], inneriter)
             push!(history["inner_iter_corrector"], 0)
+
+            push!(pred_pcg_iters, inneriter)
+            push!(corr_pcg_iters, 0)
         end
         push!(history["krylov_tol"], krylov_tol)
 
@@ -444,6 +479,16 @@ function IP_PMM_bdd(input::IPMInput{T};
         CG_solving_elapsed = zero(T)
 
     end # end of while loop
+
+    if save_data
+        fname_t = joinpath(root_path, "deltas.csv")
+        CSV.write(fname_t, Tables.table(deltas), writeheader=false)
+
+        fname_t = joinpath(root_path, "pred_pcg_iters.csv")
+        CSV.write(fname_t, Tables.table(pred_pcg_iters), writeheader=false)
+        fname_t = joinpath(root_path, "corr_pcg_iters.csv")
+        CSV.write(fname_t, Tables.table(corr_pcg_iters), writeheader=false)
+    end
 
     # The IPM has terminated because the solution accuracy is reached or the maximum number 
     # of iterations is exceeded, or the problem under consideration is infeasible. Print result.  
